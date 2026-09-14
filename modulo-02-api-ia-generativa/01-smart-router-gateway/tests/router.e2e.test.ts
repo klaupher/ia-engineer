@@ -9,8 +9,6 @@ console.assert(
   'OPENROUTER_API_KEY is not set in env variables'
 );
 
-
-
 test('routes to cheaper model by default', async () => {
   const customConfig = {
     ...config,

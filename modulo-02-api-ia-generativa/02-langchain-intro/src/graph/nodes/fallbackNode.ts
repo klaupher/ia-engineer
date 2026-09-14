@@ -1,0 +1,16 @@
+import { AIMessage } from "langchain";
+import { type GraphState } from "../graph.ts";
+
+export function fallbackNode(state: GraphState): GraphState {
+    const message = "Unkown command. Try 'make this upercase' or 'converto to lowercase";
+    const fallbackMessage = new AIMessage(message);
+
+    return {
+        ...state,
+        output: message,
+        messages: [
+            ...state.messages,
+            fallbackMessage
+        ]
+    };
+}
