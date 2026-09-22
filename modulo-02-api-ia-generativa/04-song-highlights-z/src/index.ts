@@ -2,8 +2,9 @@ import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import { HumanMessage } from '@langchain/core/messages';
 import { buildGraph } from './graph/factory.ts';
+import { PreferencesService } from './services/preferencesService.ts';
 
-function parseArgs(): { userId?: string } {
+function parseArgs(): { userId?: string; } {
   const args = process.argv.slice(2);
   const userIndex = args.indexOf('--user');
 
@@ -23,16 +24,25 @@ async function main(): Promise<void> {
     console.log('═'.repeat(60));
     console.log('\nDigite suas mensagens abaixo. Digite "exit" para sair.\n');
 
-    const { graph, memoryService } = await buildGraph();
+    const { graph, preferencesService } = await buildGraph();
 
     const { userId } = parseArgs();
+    const actualUserId = userId || 'anonymous';
     const threadId = userId ? `user-${userId}` : `user-${Date.now()}`;
     const config = {
       configurable: { thread_id: threadId },
       context: { userId: threadId }
     };
 
-    if (userId) {
+    console.log(`👤 Usuário: ${actualUserId}`);
+    console.log(`💬 Thread da Conversa: ${threadId}`);
+
+    const userContext = await preferencesService.getBasicInfo(actualUserId);
+    if (userContext) {
+      console.log(`📇  Informações do usuário carregadas: \n${userContext}\n`);
+    }
+
+    /*if (userId) {
       console.log(`👤 Usuário: ${userId}`);
     }
     console.log(`📝 ID da Sessão: ${threadId}\n`);
@@ -46,7 +56,7 @@ async function main(): Promise<void> {
         userContext = existingMemories.map((m: any) => m.value.data).join('\n');
         console.log(`📚 Informações do usuário carregadas:\n${userContext}\n`);
       }
-    }
+    }*/
 
     try {
       const initialMessage = userContext

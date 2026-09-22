@@ -3,11 +3,13 @@ import { OpenRouterService } from '../../services/openrouterService.ts';
 import type { GraphState } from '../graph.ts';
 import { ChatResponseSchema, getSystemPrompt, getUserPromptTemplate } from '../../prompts/v1/chatResponse.ts';
 import { AIMessage, HumanMessage } from 'langchain';
+import { PreferencesService } from '../../services/preferencesService.ts';
+import { config } from '../../config.ts';
 
-export function createChatNode(llmClient: OpenRouterService) {
+export function createChatNode(llmClient: OpenRouterService, preferencesService: PreferencesService) {
   return async (state: GraphState, runtime?: Runtime): Promise<Partial<GraphState>> => {
-
-    const userContext = '';
+    const userId = String(runtime?.context?.userId || state.userId || 'unknown');
+    const userContext = state.userContext ?? await preferencesService.getBasicInfo(userId);
     const systemPrompt = getSystemPrompt(userContext);
 
     const conversationHistory = state.messages
@@ -20,6 +22,7 @@ export function createChatNode(llmClient: OpenRouterService) {
       conversationHistory,
     );
 
+    1;
     const result = await llmClient.generateStructured(
       systemPrompt,
       userPrompt,
@@ -37,12 +40,15 @@ export function createChatNode(llmClient: OpenRouterService) {
 
     const response = result.data;
 
+    const totalMessages = state.messages.length;
+    const needsSummarization = totalMessages >= config.maxMessagesToSummary;
+
     return {
       messages: [
         new AIMessage(response.message)
       ],
       extractedPreferences: response.shouldSavePreferences ? response.preferences : undefined,
-      needsSummarization: false
+      needsSummarization
     };
   };
 }
